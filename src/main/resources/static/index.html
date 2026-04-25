@@ -449,6 +449,11 @@
       // { orderId, portonePaymentId, totalAmount, orderName, status }
       const order = await orderRes.json();
 
+      const customer = {};
+      customer.fullName = "르탄이";
+      customer.email = "sparta@gmali.com";
+      customer.phoneNumber = "010-0000-0000"
+
       // ② PortOne 결제창 오픈
       const payResult = await PortOne.requestPayment({
         storeId:     portoneConf.storeId,
@@ -458,6 +463,7 @@
         totalAmount: order.totalAmount,
         currency:    'KRW',
         payMethod:   'CARD',
+        customer: customer,
       });
 
       if (payResult.code) {
