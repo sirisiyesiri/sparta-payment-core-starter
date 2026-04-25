@@ -286,7 +286,6 @@
   let portoneConf = null; // GET /api/config/portone 결과
   let cart        = [];   // [{ productId, name, price, quantity, cartItemId }]
   let orders      = [];   // 완료된 주문 목록 (메모리)
-  let paySeq      = 0;    // H2 auto-increment Payment.id 추적용
 
   // 상품 테마 (index 순서 고정)
   const THEMES = [
@@ -446,7 +445,7 @@
         return;
       }
 
-      // { orderId, portonePaymentId, totalAmount, orderName, status }
+      // { orderId, paymentId, portonePaymentId, totalAmount, orderName, status }
       const order = await orderRes.json();
 
       const customer = {};
@@ -487,13 +486,12 @@
       }
 
       // 성공
-      paySeq++;
       orders.unshift({                         // 최신순 삽입
         orderId:          order.orderId,
+        paymentId:        order.paymentId,     // 서버에서 받은 실제 Payment DB ID
         portonePaymentId: order.portonePaymentId,
         totalAmount:      order.totalAmount,
         orderName:        order.orderName,
-        paymentDbId:      paySeq,              // H2 auto-increment Payment.id
         status:           'PAID',
       });
 
@@ -512,14 +510,14 @@
   // ────────────────────────────────────────────────────────
   //  결제 취소  POST /api/payments/{id}/cancel
   // ────────────────────────────────────────────────────────
-  async function cancelPayment(paymentDbId, reason, btn) {
+  async function cancelPayment(paymentId, reason, btn) {
     btn.disabled  = true;
     btn.textContent = '취소 중...';
 
-    const res = await fetch(`/api/payments/${paymentDbId}/cancel`, {
+    const res = await fetch(`/api/payments/${paymentId}/cancel`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ reason, storeId: null }),
+      body:    JSON.stringify({ reason }),
     });
 
     if (!res.ok) {
@@ -529,7 +527,7 @@
       return;
     }
 
-    const order = orders.find(o => o.paymentDbId === paymentDbId);
+    const order = orders.find(o => o.paymentId === paymentId);
     if (order) order.status = 'CANCELLED';
     renderOrders();
     toast('결제가 취소되었습니다.', 'ok');
@@ -560,9 +558,9 @@
           <div class="order-portone">${o.portonePaymentId}</div>
           ${!cancelled ? `
           <div class="cancel-area">
-            <input class="cancel-reason" id="r-${o.paymentDbId}"
+            <input class="cancel-reason" id="r-${o.paymentId}"
                    placeholder="취소 사유" value="단순 변심" />
-            <button class="btn-cancel" data-pid="${o.paymentDbId}">결제취소</button>
+            <button class="btn-cancel" data-pid="${o.paymentId}">결제취소</button>
           </div>` : ''}
         </div>`;
     }).join('');
