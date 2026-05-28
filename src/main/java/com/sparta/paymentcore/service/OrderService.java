@@ -31,10 +31,10 @@ public class OrderService {
         //  1. 장바구니 조회 (비어있으면 전체 장바구니 사용)
         // 사용자가 선택한 상품 ID 목록이 비어 있을 경우 → findByMemberId(memberId) : 로그인 한 회원의 장바구니에 담긴 모든 상품
         // 사용자가 선택한 상품 ID 목록이 존재할 경우 → findAllById(request.cartItemIds()) : 사용자가 선택한 특정 상품들만
-        List<CartItem> cartItems = request.cartItemIds().isEmpty()
+        List<CartItem> cartItems = request.cartItemIds().isEmpty()  // 특정 상품 체크 표시 확인 → 전체 체크는 빈 배열, 선택 체크는 해당 상품들의 번호가 들어있는 배열
                 ? cartItemRepository.findByMemberId(memberId)
                 : cartItemRepository.findAllById(request.cartItemIds());
-        if (cartItems.isEmpty()) {
+        if (cartItems.isEmpty()) {  // 실제 장바구니가 비어있는지 확인
             throw new RuntimeException("장바구니가 비어있습니다.");
         }
 
